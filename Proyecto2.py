@@ -1,80 +1,113 @@
-from Funciones import generar_llaves, encriptar, desencriptar, generar_primo, mcd, inverso_modular
+#
+#-----------------------------------------------------------
+# Proyecto2.py
+#-----------------------------------------------------------
+# UNIVERSIDAD DEL VALLE DE GUATEMALA
+# FACULTAD DE Ciencias y Humanidades
+# DEPARTAMENTO DE Matematica
+# MM2015 - MATEMATICA DISCRETA 1
+#
+# Creadores:
+# Eliazar José Pablo Canastuj Matías - 23384
+# Diego Alejandro Ramírez Velásquez - 23601
+# María José Yee Vidal - 231193
+#-----------------------------------------------------------
+# Descripción: Encriptado y Desencriptado de mensajes
+# mediante el sistema RSA.
+#-----------------------------------------------------------
+
+from Funciones import *
 
 def main():
-    # Paso 1: Generar claves RSA
-    rango_inferior = 100
-    rango_superior = 200
+    try:
+        # Solicitar rango inferior y superior al usuario
+        rango_inferior = int(input("Ingrese el rango inferior para generar primos: "))
+        rango_superior = int(input("Ingrese el rango superior para generar primos: "))
 
-    # Generar dos números primos p y q
-    p = generar_primo(rango_inferior, rango_superior)
-    q = generar_primo(rango_inferior, rango_superior)
-    while p == q:  # Asegurar que p y q sean distintos
+        # Validar que el rango sea correcto
+        if rango_inferior >= rango_superior:
+            raise ValueError("El rango inferior debe ser menor que el rango superior.")
+
+        # Generar dos numeros primos p y q
+        p = generar_primo(rango_inferior, rango_superior)
         q = generar_primo(rango_inferior, rango_superior)
+        while p == q:  # Asegurar que p y q sean distintos
+            q = generar_primo(rango_inferior, rango_superior)
 
-    # Calcular n y ϕ(n)
-    n = p * q
-    phi = (p - 1) * (q - 1)
+        # Calcular n y ϕ(n)
+        n = p * q
+        phi = (p - 1) * (q - 1)
 
-    # Encontrar e
-    e = None
-    for candidate in range(2, phi):
-        if mcd(candidate, phi) == 1:
-            e = candidate
-            break
+        # Encontrar e
+        e = next((x for x in range(2, phi) if mcd(x, phi) == 1), None)
+        if e is None:
+            raise ValueError("No se pudo encontrar un valor válido para 'e'.")
 
-    if e is None:
-        print("Error: No se pudo encontrar un valor válido para 'e'.")
-        return
+        # Calcular d 
+        d = inverso_modular(e, phi)
+        if isinstance(d, str):
+            raise ValueError(f"Error al calcular d: {d}")
 
-    # Calcular d (inverso modular de e mod ϕ(n))
-    d = inverso_modular(e, phi)
-    if isinstance(d, str):
-        print(f"Error al calcular d: {d}")
-        return
+        # Claves publica y privada
+        clave_publica = (e, n)
+        clave_privada = (d, n)
 
-    # Claves pública y privada
-    clave_publica = (e, n)
-    clave_privada = (d, n)
+        # Imprimir los valores generados
+        print("\nValores generados:")
+        print(f"p: {p}")
+        print(f"q: {q}")
+        print(f"n (p*q): {n}")
+        print(f"ϕ(n): {phi}")
+        print(f"e : {e}")
+        print(f"d : {d}")
+        print(f"Clave pública: {clave_publica}")
+        print(f"Clave privada: {clave_privada}")
 
-    # Imprimir los valores generados
-    print("Valores generados:")
-    print(f"p: {p}")
-    print(f"q: {q}")
-    print(f"n (p*q): {n}")
-    print(f"ϕ(n): {phi}")
-    print(f"e (clave pública): {e}")
-    print(f"d (clave privada): {d}")
-    print(f"Clave pública: {clave_publica}")
-    print(f"Clave privada: {clave_privada}")
+        # Solicitar mensajes al usuario
+        mensajes = []
+        print("\nIngrese los mensajes que desea probar (valores enteros menores que 'n'). Escriba 'done' para terminar:")
+        while True:
+            entrada = input("Mensaje: ")
+            if entrada.lower() == "done":
+                break
+            try:
+                mensaje = int(entrada)
+                if mensaje >= n:
+                    print(f"El mensaje debe ser menor que {n}. Intente nuevamente.")
+                else:
+                    mensajes.append(mensaje)
+            except ValueError:
+                print("Entrada no válida. Por favor, ingrese un número entero.")
 
-    # Paso 2: Mensajes para probar
-    mensajes = [42, 123, 75]  # Mensajes numéricos, deben ser menores que 'n'
-    resultados = []
+        # Probar encriptacion y desencriptacion con los mensajes ingresados
+        resultados = []
+        for mensaje in mensajes:
+            print(f"\nMensaje original (m): {mensaje}")
 
-    for mensaje in mensajes:
-        print(f"\nMensaje original (m): {mensaje}")
+            # Encriptar
+            mensaje_encriptado = encriptar(mensaje, clave_publica)
+            if isinstance(mensaje_encriptado, str):  # Verifica si hay un error
+                print(f"Error durante la encriptación: {mensaje_encriptado}")
+                continue
 
-        # Encriptar
-        mensaje_encriptado = encriptar(mensaje, clave_publica)
-        if isinstance(mensaje_encriptado, str):  # Verifica si hay un error
-            print(f"Error durante la encriptación: {mensaje_encriptado}")
-            continue
+            print(f"Mensaje encriptado (c): {mensaje_encriptado}")
 
-        print(f"Mensaje encriptado (c): {mensaje_encriptado}")
+            # Desencriptar
+            mensaje_desencriptado = desencriptar(mensaje_encriptado, clave_privada)
+            if isinstance(mensaje_desencriptado, str):  # Verifica si hay un error
+                print(f"Error durante la desencriptación: {mensaje_desencriptado}")
+                continue
 
-        # Desencriptar
-        mensaje_desencriptado = desencriptar(mensaje_encriptado, clave_privada)
-        if isinstance(mensaje_desencriptado, str):  # Verifica si hay un error
-            print(f"Error durante la desencriptación: {mensaje_desencriptado}")
-            continue
+            print(f"Mensaje desencriptado (m): {mensaje_desencriptado}")
+            resultados.append((mensaje, mensaje_encriptado, mensaje_desencriptado))
 
-        print(f"Mensaje desencriptado (m): {mensaje_desencriptado}")
-        resultados.append((mensaje, mensaje_encriptado, mensaje_desencriptado))
+        # Documentar los resultados
+        print("\nResultados de las pruebas:")
+        for original, encriptado, desencriptado in resultados:
+            print(f"Original (m): {original}, Encriptado (c): {encriptado}, Desencriptado (m): {desencriptado}")
 
-    # Paso 3: Documentar los resultados
-    print("\nResultados de las pruebas:")
-    for original, encriptado, desencriptado in resultados:
-        print(f"Original (m): {original}, Encriptado (c): {encriptado}, Desencriptado (m): {desencriptado}")
+    except Exception as e:
+        print(f"Se produjo un error: {e}")
 
 if __name__ == "__main__":
     main()
